@@ -17,10 +17,9 @@ class XORDataset(Dataset):
         self.ground_truth = Tensor([0, 1, 1, 0]).unsqueeze(-1)
 
     def __len__(self):
-        return 100
+        return self.data.size(0)
 
     def __getitem__(self, index):
-        i = index % self.data.size(0)
-        return self.data[i], self.ground_truth[i]
+        return self.data[index], self.ground_truth[index]
 
 xor_dataloader = DataLoader(XORDataset(), num_workers=num_workers)

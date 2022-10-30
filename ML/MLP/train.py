@@ -13,7 +13,7 @@ class MainModel(pl.LightningModule):
 
         self.lr = 1e-2
         self.momentum = 0.9
-        self.model = SimpleMLP(d_in=2, d_hid=5, d_out=1, n_hid=4, sigma=nn.Sigmoid)
+        self.model = SimpleMLP(d_in=2, d_hid=2, d_out=1, n_hid=1, sigma=nn.Sigmoid)
 
     def training_step(self, batch, _):
         input_data, ground_truth = batch
