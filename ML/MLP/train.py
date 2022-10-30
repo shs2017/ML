@@ -18,7 +18,7 @@ class MainModel(pl.LightningModule):
     def training_step(self, batch, _):
         input_data, ground_truth = batch
         prediction = self.model(input_data)
-        loss = F.cross_entropy(prediction, ground_truth)        
+        loss = F.cross_entropy(prediction, ground_truth)
 
         self.log('train_loss', loss)
 
@@ -30,7 +30,7 @@ class MainModel(pl.LightningModule):
                          momentum=self.momentum)
 
 
-main_model = MainModel()
-
-trainer = pl.Trainer(max_epochs=1, log_every_n_steps=10)
-trainer.fit(model=main_model, train_dataloaders=xor_dataloader)
+if __name__ == '__main__':
+    main_model = MainModel()
+    trainer = pl.Trainer(max_epochs=1, log_every_n_steps=10)
+    trainer.fit(model=main_model, train_dataloaders=xor_dataloader)
