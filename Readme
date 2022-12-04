@@ -1,1 +1,10 @@
+Implementation of several deep learning architectures
 
+[x] MLP
+[x] CNN
+[x] ResNet
+[] UNet (wip)
+[] Transformer (wip)
+[] Latent Diffusion
+[] NeRF
+[] Custom architectures...
