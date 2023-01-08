@@ -8,3 +8,8 @@ Implementation of several deep learning architectures
 [] Latent Diffusion (wip)
 [] NeRF (wip)
 [] Custom architectures (wip)...
+
+TODO:
+* Add training results
+* Add steps on how to use
+* Add argparse style arguments to each train.py file
