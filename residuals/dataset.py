@@ -9,7 +9,7 @@ batch_size=8
 
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
-ROOT_PATH = os.path.dirname(os.path.dirname(BASE_PATH))
+ROOT_PATH = os.path.dirname(BASE_PATH)
 DATASET_PATH = os.path.join(ROOT_PATH, 'datasets')
 
 class ConvertImage:
