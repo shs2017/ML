@@ -59,10 +59,11 @@ class TextDataModule(pl.LightningDataModule):
 
     def _batchify(self, data: Tensor) -> Tensor:
         """Prepares dataset for training batches"""
-        max_seq_len = self.seq_len + 1
-        n_batches = data.size(0) // (self.batch_size * max_seq_len)
-        data = data[: n_batches * self.batch_size * max_seq_len]
-        data = data.view(n_batches, self.batch_size, max_seq_len)
+        n_batches = data.size(0) // (self.batch_size * self.seq_len)
+        data = data[: n_batches * self.batch_size * self.seq_len]
+        data = data.view(self.batch_size, n_batches, self.seq_len)
+        data = data.transpose(0, 1)
+
         return data
 
     def _get_vocab(self):
@@ -122,7 +123,9 @@ BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.dirname(BASE_PATH)
 DATASET_PATH = os.path.join(ROOT_PATH, "datasets")
 
+BATCH_SIZE = 20
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-dataset = TextDataModule(batch_size=20, seq_len=35, dataset=WikiText2(DATASET_PATH)).to(
-    device
-)
+dataset = TextDataModule(
+    batch_size=BATCH_SIZE, seq_len=35, dataset=WikiText2(DATASET_PATH)
+).to(device)
