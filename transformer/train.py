@@ -1,15 +1,17 @@
 """ Trains on transformer-based token prediction model """
 
+from typing import Callable
 from math import exp
 
 import torch
-from torch import nn
+
+from torch import nn, Tensor
 
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping, StochasticWeightAveraging
+from pytorch_lightning.callbacks import EarlyStopping
 
 from model import AttentionModel
-from dataset import dataset
+from dataset import dataset, BATCH_SIZE
 
 
 class EMALossCalculator:
@@ -47,21 +49,28 @@ class MainModel(pl.LightningModule):
         lr: float,
         n_tokens: int,
         d_embed: int,
+        d_proj: int,
+        n_hidden: int,
         n_layers: int,
         n_heads: int,
-        dropout: float,
+        p_dropout: float,
         max_seq_len: int,
+        activation: Callable[[Tensor], Tensor] = nn.ReLU,
         ignore_index: int = 0,
         loss_calculator=None,
     ):
         """
         Args:
+            lr (float): learning rate
             n_tokens (int): number of tokens
             d_embed (int): embedding dimension
+            d_proj (int):  mlp hidden dimension
+            n_hidden (int): number of mlp hidden layers
             n_layers (int): number of decoder blocks to use
             n_heads (int): number of attention heads
-            dropout (float): dropout probrability
+            p_dropout (float): dropout probrability
             max_seq_len (int): maximum sequence length
+            activation (Callable[[Tensor], Tensor]): mlp activation function (defaults to relu)
             ignore_index (int): vocab index used for the "<unk>" token
             loss_calculator: class used for updating the loss. Leave as `None` if
                              the computed loss does not need to be changed.
@@ -76,13 +85,20 @@ class MainModel(pl.LightningModule):
         self.model = AttentionModel(
             n_layers=n_layers,
             d_embed=d_embed,
+            d_proj=d_proj,
+            n_hidden=n_hidden,
             n_heads=n_heads,
-            features=[d_embed, d_embed, d_embed],
+            p_dropout=p_dropout,
             max_seq_len=max_seq_len,
             n_tokens=n_tokens,
-            dropout=dropout,
+            unk_index=ignore_index,
+            activation=activation,
         )
+
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)
+
+    def _print_loss(self, key, value):
+        self.log(key, value, batch_size=BATCH_SIZE, prog_bar=True)
 
     def _predict(self, batch):
         """Predict next tokens for each batch"""
@@ -95,18 +111,21 @@ class MainModel(pl.LightningModule):
             loss = self.loss_calculator.update(loss)
 
         perplexity = exp(loss)
-        self.log("perplexity", perplexity, prog_bar=True)
+        self._print_loss("perplexity", perplexity)
 
         return loss
 
-    # Standard PyTorch Lightning LightningModule methods implemented
-
+    # Standard LightningModule methods implemented
     def training_step(self, batch, _):
         return self._predict(batch)
 
     def validation_step(self, batch, _):
         loss = self._predict(batch)
-        self.log("val_loss", loss)
+        self._print_loss("val_loss", loss)
+
+        perplexity = exp(loss)
+        self._print_loss("val_perplexity", perplexity)
+
         return loss
 
     def test_step(self, batch, _):
@@ -119,25 +138,25 @@ class MainModel(pl.LightningModule):
 vocab_size = dataset.vocab_size
 ignore_index = dataset.ignore_index
 
-callbacks = [
-    StochasticWeightAveraging(5.0),
-    EarlyStopping(monitor="val_loss", mode="min"),
-]
+callbacks = []
+
 model = MainModel(
     lr=1.0,
     n_tokens=vocab_size,
-    d_embed=200,
-    n_layers=5,
+    d_embed=256,
+    d_proj=512,
+    n_hidden=2,
+    n_layers=4,
     n_heads=8,
-    dropout=0.2,
+    p_dropout=0.2,
     max_seq_len=35,
     ignore_index=ignore_index,
-    loss_calculator=EMALossCalculator(alpha=0.05),
+    loss_calculator=None,  # put EMALossCalculator(alpha=...) here to use EMA loss instead
 )
 
 trainer = pl.Trainer(
     accelerator="gpu",
-    max_epochs=20,
+    max_epochs=25,
     log_every_n_steps=200,
     gradient_clip_val=0.5,
     callbacks=callbacks,
