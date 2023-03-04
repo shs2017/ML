@@ -1,1 +1,3 @@
 Train a MLP on a XOR gate
+
+To train, run `python mlp/train.py` from the command line from the root directory.
