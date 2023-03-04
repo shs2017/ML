@@ -6,20 +6,25 @@ def default(x, default_value):
     return x if x is not None else default_value
 
 class SimpleMLP(nn.Module):
-    def __init__(self, d_in, d_hid, d_out, n_hid=1, sigma=None):
+    def __init__(self, config):
         super().__init__()
 
-        assert d_in > 0 and d_hid > 0 and d_out > 0 and n_hid > 0
+        layers = []
+        sigma = default(config.activation, nn.Sigmoid)
 
-        sigma = default(sigma, nn.ReLU)
-        input_layer = [nn.Linear(d_in, d_hid), sigma()]
-        hidden_layers = chain(
-            *[
-                (nn.Linear(d_hid, d_hid), sigma()) for _ in range(n_hid)
-            ])
-        output_layer = [nn.Linear(d_hid, d_out), sigma()]
+        # Input Layer
+        layers.append(nn.Linear(config.d_in, config.d_hid))
+        layers.append(sigma())
 
-        self.f = nn.Sequential(*input_layer, *hidden_layers, *output_layer)
+        # # Hidden Layers
+        for _ in range(config.n_hid - 1):
+            layers.append(nn.Linear(config.d_hid, config.d_hid))
+            layers.append(sigma())
+
+        # Output Layer
+        layers.append(nn.Linear(config.d_hid, config.d_out))
+
+        self.f = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.f(x)
