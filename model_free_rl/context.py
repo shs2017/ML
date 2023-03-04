@@ -17,9 +17,9 @@ class Context:
         self.reward = reward
 
     def __str__(self):
-        print('(' + \
-              f'action={self.action}, ' + \
-              f'state={self.state}, ' + \
-              f'next_state={self.next_state}, ' + \
-              f'reward={self.reward}, ' + \
-              ')')
+        return ('(' + \
+                f'action={self.action}, ' + \
+                f'state={self.state}, ' + \
+                f'next_state={self.next_state}, ' + \
+                f'reward={self.reward}, ' + \
+                ')')

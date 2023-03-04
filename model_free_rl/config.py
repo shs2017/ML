@@ -14,5 +14,9 @@ class Config:
     lr: float
     gamma: float
     epsilon: float
+    epsilon_min: float
+    epsilon_step_size: float
+
+    env: any
 
     # Agent related configuration
