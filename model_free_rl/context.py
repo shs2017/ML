@@ -1,10 +1,11 @@
 class Context:
-    """SARS context
+    """State context:
 
        S: state t
-       A: action
+       A: action t
        R: reward
        S: state t + 1
+       A: action t + 1
     """
 
     def __init__(self, action, state, next_state, reward, next_action=None):
@@ -21,5 +22,5 @@ class Context:
                 f'action={self.action}, ' + \
                 f'state={self.state}, ' + \
                 f'next_state={self.next_state}, ' + \
-                f'reward={self.reward}, ' + \
+                f'reward={self.reward}' + \
                 ')')
