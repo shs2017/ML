@@ -4,10 +4,12 @@ Implementation of several deep learning architectures
 [x] CNN
 [x] ResNet
 [X] Transformer
-[] UNet (wip)
-[] Latent Diffusion (wip)
-[] NeRF (wip)
-[] Custom architectures (wip)...
+[X] Tabular Model-free RL(SARSA & Q-Learning)
+[] Forward-Forward Algorithm (wip)
+[] UNet
+[] Latent Diffusion
+[] NeRF
+[] Custom long-term, in-context learning architecture (wip)
 
 TODO:
 * Add training results
