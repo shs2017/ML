@@ -205,8 +205,8 @@ class MultiHeadAttention(nn.Module):
 
         # Split embeddings into multiple heads
         K = self.P_k(key).view(N, S, self.n_heads, self.p_embed)
-        Q = self.P_q(key).view(N, T, self.n_heads, self.p_embed)
-        V = self.P_v(key).view(N, S, self.n_heads, self.p_embed)
+        Q = self.P_q(query).view(N, T, self.n_heads, self.p_embed)
+        V = self.P_v(value).view(N, S, self.n_heads, self.p_embed)
 
         # Permute matrix so that the matrix multiplication dimensions work out
         K = K.transpose(1, 2)  # (N, S, H, P) -> (N, H, S, P)
@@ -295,12 +295,8 @@ class DecoderBlock(nn.Module):
         Returns:
             A tensor outputted by decoder block of shape (N, T, E)
         """
-        x = self.att_layer_norm(x)
-        x = x + self.attention(x, mask=mask)
-
-        x = self.mlp_layer_norm(x)
-        x = x + self.mlp(x)
-
+        x = x + self.attention(self.att_layer_norm(x), mask=mask)
+        x = x + self.mlp(self.mlp_layer_norm(x))
         return x
 
 

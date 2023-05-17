@@ -156,7 +156,7 @@ model = MainModel(
 
 trainer = pl.Trainer(
     accelerator="gpu",
-    max_epochs=25,
+    max_epochs=5,
     log_every_n_steps=200,
     gradient_clip_val=0.5,
     callbacks=callbacks,
