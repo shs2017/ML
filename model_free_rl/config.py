@@ -2,12 +2,13 @@
 
 from dataclasses import dataclass
 
-@dataclass
-class ConfigurationData:
-    """Model and training configuration"""
+@dataclass(frozen=True)
+class Config:
+    # Logging
+    log: bool
+    log_interval: int
 
     # Training related configuration
-    action_space_shape: int
     train_epochs: int
     test_epochs: int
     debug: bool
@@ -16,38 +17,23 @@ class ConfigurationData:
     gamma: float
     epsilon_start: float
     epsilon_min: float
-    epsilon_step_size: float
 
-    # Logging
-    log: bool
-    log_interval: int
+    @property
+    def epsilon_step_size(self):
+        epsilon_delta = self.epsilon_start - self.epsilon_min
+        return epsilon_delta / (self.train_epochs / 2)
 
-
-config = None
-config_built = False
-
-def build_config(action_size):
-    global config
-    global config_built
-
-    config_built = True
-    config = ConfigurationData(action_space_shape = action_size,
-                               train_epochs = 100_000,
-                               test_epochs = 10,
-                               debug = False,
-                               gamma = 1,
-                               lr = 1e-1,
-                               epsilon_start = 1,
-                               epsilon_min = 0.1,
-                               epsilon_step_size = 0.001,
-                               log = True,
-                               log_interval = 25_000)
+config = Config(
+    train_epochs = 5_000_000,
+    test_epochs = 10,
+    debug = False,
+    gamma = 0.95,
+    lr = 0.001,
+    epsilon_start = 1,
+    epsilon_min = 0.1,
+    log = True,
+    log_interval = 25_000
+)
 
 def get_config():
-    global config
-    global config_built
-
-    if not config_built:
-        raise ValueError('You must build the configuration before using it')
-
     return config

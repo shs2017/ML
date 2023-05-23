@@ -1,11 +1,14 @@
 import gymnasium as gym
 
+from time import sleep
+from typing import List
+
 from model import Agent, SARSA, QLearner
 from context import Context
-from config import build_config, get_config
-from logger import RewardLogger
+from config import get_config
+from logger import RewardLogger, graph_policy_maps
 
-from time import sleep
+config = get_config()
 
 class Trainer:
     """Agent trainer"""
@@ -13,15 +16,13 @@ class Trainer:
     def __init__(self, train_env, test_env):
         self.train_env = train_env
         self.test_env = test_env
-
-        self.config = get_config()
         self.logger = RewardLogger()
 
     def fit(self, agent: Agent):
         """Fit the agent against the environment"""
 
         agent.train_mode()
-        for epoch in range(self.config.train_epochs):
+        for epoch in range(config.train_epochs):
             self.iteration(self.train_env, epoch, agent, train=True)
             agent.end_epoch()
 
@@ -31,7 +32,7 @@ class Trainer:
         """Test the agent against the environment"""
 
         agent.test_mode()
-        for epoch in range(self.config.test_epochs):
+        for epoch in range(config.test_epochs):
             self.iteration(self.test_env, epoch, agent, train=False)
             agent.end_epoch()
 
@@ -45,13 +46,13 @@ class Trainer:
             # Action
             action = agent.action(state)
             next_state, reward, terminated, truncated, _ = env.step(action)
-            context = Context(action, state, next_state, reward)
+            context = Context(action, state, next_state, reward, terminated=terminated)
 
             # Update
             agent.update(context)
+
             if not train:
                 print(context)
-
 
             done = terminated or truncated
             state = context.next_state
@@ -61,22 +62,30 @@ class Trainer:
         self.logger.log(epoch)
 
 if __name__ == '__main__':
+    train_with_q_learning = True
+    train_with_sarsa = False
+    should_graph = True
+
     train_env = gym.make('Blackjack-v1')
     test_env = gym.make('Blackjack-v1')
-    build_config(train_env.action_space.n)
 
-    print('Training Q Learning Agent')
-    q_agent = Agent(learner=QLearner())
-    trainer = Trainer(train_env, test_env)
-    trainer.fit(q_agent)
+    action_space_shape = train_env.action_space.n
+    agents = [
+        ('Q Learning', QLearner(action_space_shape), train_with_q_learning),
+        ('SARSA', SARSA(action_space_shape), train_with_sarsa)
+    ]
 
-    print('Training SARSA Learning Agent')
-    s_agent = Agent(learner=SARSA())
-    trainer = Trainer(train_env, test_env)
-    trainer.fit(s_agent)
+    for agent_name, learner, should_train in agents:
+        if not should_train:
+            continue
 
-    print('Testing Q Learning Agent')
-    trainer.test(q_agent)
+        print(f'Training {agent_name} Agent')
+        agent = Agent(learner=learner)
+        trainer = Trainer(train_env, test_env)
+        trainer.fit(agent)
 
-    print('Testing SARSA Agent')
-    trainer.test(s_agent)
+        print(f'Testing {agent_name} Agent')
+        trainer.test(agent)
+
+        if should_graph:
+            graph_policy_maps(agent.policy_maps)
