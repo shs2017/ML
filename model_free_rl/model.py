@@ -39,7 +39,6 @@ class AbstractStrategy(ABC):
             usable_ace = state[2]
             best_action = argmax(action)
 
-            # is this an indicator of the failure cases
             if player_hand > 21 or dealer_hand > 11:
                 continue
 
