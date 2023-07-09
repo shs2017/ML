@@ -1,3 +1,4 @@
 Tabular SARSA and Q-Learning agents trained on blackjack.
 
-To train, run `python model_free_rl/train.py` from the command line from the root directory.
+To train, run `python model_free_rl/train.py --help` from the command line from the root directory for more info.
+Likewise, for testing the model in a GUI, run `python model_free_rl/test.py --help` from the command line from the root directory for more info.
