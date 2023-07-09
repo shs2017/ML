@@ -1,34 +1,29 @@
-from collections import deque
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 from config import get_config
-from typing import List, Tuple
 
-class RewardLogger:
+config = get_config()
+
+class RunningRewards:
     def __init__(self):
-        self.config = get_config()
-        self.rewards = deque()
+        self.i = 0
+        self.running_rewards = []
 
-    def update(self, reward: float):
-        self.rewards.append(reward)
-        while self.config.log_interval < len(self.rewards):
-                self.rewards.popleft()
+        self.epsilon = config.initial_epsilon
+        self.log_interval = config.log_interval
 
-    def log(self, epoch: int):
-        if epoch == 0:
-            return
+    def add_reward(self, reward):
+        self.running_rewards.append(reward)
+        self.i += 1
 
-        if self.config.log and (epoch % self.config.log_interval) == 0:
-            average_reward = sum(self.rewards) / len(self.rewards)
-            print(f'Epoch #{epoch}: Average Reward {average_reward}')
+    def update_epsilon(self, epsilon):
+        self.epsilon = epsilon
 
+    def log(self, pbar):
+        n_logs = len(self.running_rewards)
+        if n_logs == self.log_interval:
+            avg_reward = sum(self.running_rewards) / n_logs
 
-def graph_policy_maps(policy_maps: Tuple[List[List[int]]]) -> None:
-    fig, ax = plt.subplots(ncols=len(policy_maps))
-    for i, policy_map in enumerate(policy_maps):
-        ax[i].imshow(policy_map)
-        ax[i].set_xticks(np.arange(1, 21))
-        ax[i].set_yticks(np.arange(1, 11))
-    plt.show()
+            description = f'Training (Iteration: {self.i:6d}, avg_reward: {avg_reward:4f}, epsilon: {self.epsilon:4f})'
+            pbar.set_description(description)
+
+            self.running_rewards = []
+

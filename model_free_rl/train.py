@@ -1,91 +1,100 @@
 import gymnasium as gym
 
-from time import sleep
-from typing import List
+import random
+import numpy as np
 
-from model import Agent, SARSA, QLearner
-from context import Context
+from tqdm import tqdm
+
+from cli import train_arguments, default_env
 from config import get_config
-from logger import RewardLogger, graph_policy_maps
+from logger import RunningRewards
+from plot import plot_blackjack_policy
+from agent import Agent, QLearner, SARSA
 
 config = get_config()
+random.seed(a=config.seed)
 
 class Trainer:
-    """Agent trainer"""
+    def __init__(self, environment_name: str, agent_type: Agent, epochs: int, lr: float):
+        self.running_rewards = RunningRewards()
+        self.epsilon = config.initial_epsilon
+        self.env = gym.make(environment_name)
+        self.agent = agent_type(action_shape=self.env.action_space.n,
+                                observation_shape=self.env.observation_space,
+                                lr=lr)
+        self.epochs = epochs
 
-    def __init__(self, train_env, test_env):
-        self.train_env = train_env
-        self.test_env = test_env
-        self.logger = RewardLogger()
+        self.state = None
+        self.next_state = None
 
-    def fit(self, agent: Agent):
-        """Fit the agent against the environment"""
+    def train(self):
+        print(f'Using the {self.agent} agent')
+        self.state, _ = self.env.reset(seed=config.seed)
 
-        agent.train_mode()
-        for epoch in range(config.train_epochs):
-            self.iteration(self.train_env, epoch, agent, train=True)
-            agent.end_epoch()
+        pbar = tqdm(range(self.epochs))
+        for i in pbar:
+            self.train_iteration()
+            self.running_rewards.log(pbar)
 
-        train_env.close()
+        self.env.close()
 
-    def test(self, agent: Agent):
-        """Test the agent against the environment"""
+    def train_iteration(self):
+        action = self.agent.select_action(self.state, epsilon=self.epsilon)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
 
-        agent.test_mode()
-        for epoch in range(config.test_epochs):
-            self.iteration(self.test_env, epoch, agent, train=False)
-            agent.end_epoch()
+        self.agent.update(self.state, action, reward, next_state, self.epsilon)
+        self.state = next_state
 
-        test_env.close()
+        self.running_rewards.add_reward(reward)
+        self.running_rewards.update_epsilon(self.epsilon)
 
-    def iteration(self, env, epoch: int, agent: Agent, train: bool):
-        done = False
-        state, _ = env.reset()
+        if terminated or truncated:
+            self.state, _ = self.env.reset()
+            self.epsilon_schedule_step()
+            self.agent.reset_state()
 
-        while not done:
-            # Action
-            action = agent.action(state)
-            next_state, reward, terminated, truncated, _ = env.step(action)
-            context = Context(action, state, next_state, reward, terminated=terminated)
+    def epsilon_schedule_step(self):
+        decreased_epsilon = self.epsilon - self.epsilon_iteration_decrease
+        self.epsilon = max(config.minimum_epsilon, decreased_epsilon)
 
-            # Update
-            agent.update(context)
+    @property
+    def epsilon_iteration_decrease(self):
+        return 3 * (config.initial_epsilon - config.minimum_epsilon) / (self.epochs)
 
-            if not train:
-                print(context)
+def get_model_types(args):
+    if args.qlearner and args.sarsa:
+        return [QLearner, SARSA]
+    elif args.qlearner:
+        return [QLearner]
+    elif args.sarsa:
+        return [SARSA]
+    elif not args.qlearner and not args.sarsa:
+        raise ValueError('A model type must be specified')
 
-            done = terminated or truncated
-            state = context.next_state
-
-            self.logger.update(reward)
-
-        self.logger.log(epoch)
+    raise ValueError('Model is not supported')
+    
 
 if __name__ == '__main__':
-    train_with_q_learning = True
-    train_with_sarsa = False
-    should_graph = True
+    args = train_arguments()
 
-    train_env = gym.make('Blackjack-v1')
-    test_env = gym.make('Blackjack-v1')
+    if args.env != default_env:
+        raise ValueError(f'Only the "{default_env}" environment is currently supported')
 
-    action_space_shape = train_env.action_space.n
-    agents = [
-        ('Q Learning', QLearner(action_space_shape), train_with_q_learning),
-        ('SARSA', SARSA(action_space_shape), train_with_sarsa)
-    ]
+    model_types = get_model_types(args)
+    if 1 < len(model_types) and (args.load_path or args.save_path):
+        raise ValueError('Support for saving/loading multiple models during ' + \
+                         'the same training run is not supported')
 
-    for agent_name, learner, should_train in agents:
-        if not should_train:
-            continue
+    for model_type in model_types:
+        trainer = Trainer(args.env, model_type, args.epochs, args.learning_rate)
+        if args.load_path:
+            trainer.agent.load(args.load_path)
 
-        print(f'Training {agent_name} Agent')
-        agent = Agent(learner=learner)
-        trainer = Trainer(train_env, test_env)
-        trainer.fit(agent)
+        trainer.train()
 
-        print(f'Testing {agent_name} Agent')
-        trainer.test(agent)
+        if args.save_path:
+            trainer.agent.save(args.save_path)
 
-        if should_graph:
-            graph_policy_maps(agent.policy_maps)
+        if args.show_policy:
+            policy = trainer.agent.get_policy()
+            plot_blackjack_policy(policy)
