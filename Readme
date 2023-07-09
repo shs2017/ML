@@ -9,7 +9,7 @@ Implementation of several deep learning architectures
 [] UNet
 [] Latent Diffusion
 [] NeRF
-[] Custom long-term, in-context learning architecture (wip)
+[] Custom long-term, out-of-context learning architecture (wip)
 
 TODO:
 * Add training results
