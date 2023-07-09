@@ -1,38 +1,19 @@
-"""Training and model related configuration"""
-
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Config:
-    # Logging
-    log: bool
-    log_interval: int
-
-    # Training related configuration
-    train_epochs: int
-    test_epochs: int
-    debug: bool
-
-    lr: float
     gamma: float
-    epsilon_start: float
-    epsilon_min: float
-
-    @property
-    def epsilon_step_size(self):
-        epsilon_delta = self.epsilon_start - self.epsilon_min
-        return epsilon_delta / (self.train_epochs / 2)
+    initial_epsilon: float
+    minimum_epsilon: float
+    log_interval: int
+    seed: int
 
 config = Config(
-    train_epochs = 5_000_000,
-    test_epochs = 10,
-    debug = False,
-    gamma = 0.95,
-    lr = 0.001,
-    epsilon_start = 1,
-    epsilon_min = 0.1,
-    log = True,
-    log_interval = 25_000
+    gamma = 0.99,
+    initial_epsilon = 0.9,
+    minimum_epsilon = 5e-2,
+    log_interval = 10_000,
+    seed = 42
 )
 
 def get_config():
