@@ -5,6 +5,7 @@ Implementation of several deep learning architectures
 [x] ResNet
 [X] Transformer
 [X] Tabular Model-free RL(SARSA & Q-Learning)
+[X] Deep RL (DDQN)
 [] Forward-Forward Algorithm (wip)
 [] UNet
 [] Latent Diffusion
