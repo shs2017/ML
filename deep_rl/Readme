@@ -1,0 +1,3 @@
+DDQN trained on Pong. Other deep rl variants and environments will be implemented in the future
+
+To train, run `python deep_rl/train.py` from the command line from the root directory of the project. To see a the trained model run `python deep_rl/eval.py --primary-path='models/<primary model path>' --target-path='models/<target model path>'`
