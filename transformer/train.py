@@ -1,87 +1,65 @@
 """ Trains on transformer-based token prediction model """
 
-from typing import Callable
-from math import exp
-
-import torch
-from torch import nn, Tensor
+import os
 
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from model import AttentionModel
-from dataset import dataset
+from data.dataset import Dataset
+from model.model import LightningAttentionModel
 
+from cli import arguments
 from config import get_config
 
 config = get_config()
 
-class MainModel(pl.LightningModule):
-    """PyTorch Lightning wrapper for the Transformer-based decoder prediction model"""
+class Trainer:
+    def __init__(self, vocab_size: int, checkpoint_path: str):
+        self.vocab_size = vocab_size
+        self.checkpoint_path = checkpoint_path
 
-    def __init__(
-        self,
-        n_tokens: int,
-    ):
-        super().__init__()
-        self.save_hyperparameters()
+        if not self.is_checkpoint_valid():
+            raise ValueError('Error: Path provided is not valid')
 
-        self.lr = config.lr
-        self.n_tokens = n_tokens
+        self.base_trainer = self.create_base_trainer()
+        self.model = self.create_model()
 
-        self.model = AttentionModel(n_tokens=n_tokens)
-        self.criterion = nn.CrossEntropyLoss(ignore_index=config.ignore_index)
+    def train(self, dataset: Dataset) -> None:
+        self.base_trainer.fit(model=self.model, datamodule=dataset, ckpt_path=self.checkpoint_path)
 
-    def _print_loss(self, key, value):
-        self.log(key, value, batch_size=config.batch_size, prog_bar=True)
+    def validate(self, dataset: Dataset) -> None:
+        self.base_trainer.validate(datamodule=dataset, ckpt_path='best')
 
-    def _predict(self, batch):
-        data, targets = batch
+    def create_model(self) -> Dataset:
+        return LightningAttentionModel(vocab_size=self.vocab_size)
 
-        output = self.model(data, use_mask=True)
-        loss = self.criterion(output.view(-1, self.n_tokens), targets)
+    def create_base_trainer(self) -> pl.Trainer:
+        if self.checkpoint_path:
+            print(f'Using checkpoint = {self.checkpoint_path}')
 
-        perplexity = exp(loss)
-        self._print_loss("perplexity", perplexity)
+        logger = None
+        if config.should_log:
+            logger = TensorBoardLogger("logs", name="transformer")
 
-        return loss
+        trainer = pl.Trainer(
+            accelerator=config.accelerator,
+            max_epochs=config.epochs,
+            log_every_n_steps=config.log_interval,
+            logger=logger,
+            callbacks=[],
+        )
 
-    # Standard LightningModule methods implemented
-    def training_step(self, batch, _):
-        return self._predict(batch)
+        return trainer
 
-    def validation_step(self, batch, _):
-        loss = self._predict(batch)
-        self._print_loss("val_loss", loss)
-
-        perplexity = exp(loss)
-        self._print_loss("val_perplexity", perplexity)
-
-        return loss
-
-    def test_step(self, batch, _):
-        return self._predict(batch)
-
-    def configure_optimizers(self):
-        return torch.optim.SGD(self.model.parameters(), lr=self.lr)
+    def is_checkpoint_valid(self) -> bool:
+        return self.checkpoint_path is None or os.path.isfile(self.checkpoint_path)
 
 if __name__ == '__main__':
-    print(f'Config = {config}')
+    from data.dataset import dataset
 
-    logger = None
-    if config.should_log:
-        logger = TensorBoardLogger("logs", name="transformer")
+    print(config)
+    args = arguments()
+    trainer = Trainer(dataset.vocab_size, args.checkpoint_path)
 
-    model = MainModel(n_tokens=dataset.vocab_size)
-    trainer = pl.Trainer(
-        accelerator="gpu",
-        max_epochs=config.epochs,
-        log_every_n_steps=config.log_interval,
-        gradient_clip_val=config.gradient_clip_value,
-        logger=logger,
-        callbacks=[],
-    )
-
-    trainer.fit(model=model, datamodule=dataset)
-    trainer.validate(datamodule=dataset)
+    trainer.train(dataset)
+    trainer.validate(dataset)
