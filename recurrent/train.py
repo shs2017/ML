@@ -43,7 +43,7 @@ def train(model, X, Y, n_epochs, optimizer):
 
     iterations += 1
 
-    if iterations % 1_000 == 0:
+    if iterations % 100 == 0:
         print(loss)
 
 
@@ -55,10 +55,10 @@ def test(model, X):
         x = X[i]
         output, hidden_state = model(x, hidden_state)
         output = torch.sigmoid(output)
-        print(f'{i} -> {torch.argmax(output)}')
+        print(f'{torch.argmax(x)} -> {torch.argmax(output)}')
 
 
-n_epochs = 1_000
+n_epochs = 2_000
 
 model = RNN(d_hid=d_hid, d_state=d_state, d_out=d_out, n_layers=n_layers)
 optimizer = SGD(model.parameters(), lr=1e-1)
