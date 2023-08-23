@@ -98,7 +98,7 @@ class LSTMCell(nn.Module):
         output_gate = self.input_gate_fn(input_state, hidden_state)
         forget_gate = self.input_gate_fn(input_state, hidden_state)
 
-        proposed_cell = self.new_cell_fn(input_state, hidden_state)
+        proposed_cell = torch.tanh(self.new_cell_fn(input_state, hidden_state))
 
         next_cell = forget_gate * previous_cell + input_gate * proposed_cell
         next_hidden_state = output_gate * torch.tanh(next_cell)
