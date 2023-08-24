@@ -133,7 +133,8 @@ class LSTM(nn.Module):
         for hidden_cell, hidden_state, previous_cell in zip(self.hidden_cells,
                                                             hidden_states,
                                                             previous_cells):
-            hidden_state, cell = hidden_cell(state, hidden_state, previous_cell)
+            hidden_state, cell = hidden_cell(state, hidden_state,
+                                             previous_cell)
             next_hidden_states.append(hidden_state)
             next_cells.append(hidden_state)
 
@@ -142,18 +143,53 @@ class LSTM(nn.Module):
 
 
 class GRUCell(nn.Module):
-    def __init__(self):
+    def __init__(self, d_in: int, d_hid: int, d_out: int):
         super().__init__()
+        self.forget_fn = Gate(d_in=d_in, d_hidden=d_hid, d_out=d_hid)
+        self.update_fn = Gate(d_in=d_in, d_hidden=d_hid, d_out=d_hid)
 
-    def forward(self, state: Tensor, hidden_states: [Tensor]) -> (Tensor,
-                                                                  [Tensor]):
-        raise NotImplementedError
+        self.proposed_hidden_fn = StateCombiner(d_in, d_hid, d_hid)
+
+    def forward(self, state: Tensor, hidden_state: Tensor) -> (Tensor,
+                                                               Tensor):
+        forget_gate = self.forget_fn(state, hidden_state)
+        update_gate = self.update_fn(state, hidden_state)
+
+        remembered_hidden_state = forget_gate * hidden_state
+        proposed_hidden = self.proposed_hidden_fn(state,
+                                                  remembered_hidden_state)
+
+        next_hidden = (update_gate) * hidden_state + \
+            (1 - update_gate) * proposed_hidden
+
+        return next_hidden
 
 
 class GRU(nn.Module):
-    def __init__(self):
+    def __init__(self, d_in: int, d_hid: int, d_out: int, n_layers: int):
         super().__init__()
 
-    def forward(self, state: Tensor, hidden_states: [Tensor]) -> (Tensor,
-                                                                  [Tensor]):
-        raise NotImplementedError
+        self.d_in = d_in
+        self.d_hid = d_hid
+        self.d_out = d_out
+
+        self.hidden_cells = nn.ModuleList([
+            self._create_hidden_cell()
+            for _ in range(n_layers)
+        ])
+
+        self.output_layer = nn.Linear(d_hid, d_out)
+
+    def _create_hidden_cell(self):
+        return GRUCell(d_in=self.d_in, d_hid=self.d_hid, d_out=self.d_hid)
+
+    def forward(self,
+                state: Tensor,
+                hidden_states: [Tensor]) -> (Tensor, [Tensor]):
+        next_hidden_states = []
+        for hidden_cell, hidden_state in zip(self.hidden_cells, hidden_states):
+            hidden_state = hidden_cell(state, hidden_state)
+            next_hidden_states.append(hidden_state)
+
+        output_state = self.output_layer(hidden_state)
+        return output_state, next_hidden_states
