@@ -21,6 +21,7 @@ def train_rnn(model, X, Y, n_epochs, optimizer):
         hidden_state = create_initial_hidden_state(n_layers)
         for i in range(n_samples):
             x, y = X[i], Y[i]
+            y = y.unsqueeze(0)
 
             output, hidden_state = model(x, hidden_state)
             loss += F.binary_cross_entropy_with_logits(output, y)
@@ -45,6 +46,7 @@ def train_lstm(model, X, Y, n_epochs, optimizer):
         hidden_state = create_initial_hidden_state(n_layers)
         for i in range(n_samples):
             x, y = X[i], Y[i]
+            y = y.unsqueeze(0)
 
             output, hidden_state, cell = model(x, hidden_state, cell)
             loss += F.binary_cross_entropy_with_logits(output, y)
@@ -68,6 +70,7 @@ def train_gru(model, X, Y, n_epochs, optimizer):
         hidden_state = create_initial_hidden_state(n_layers)
         for i in range(n_samples):
             x, y = X[i], Y[i]
+            y = y.unsqueeze(0)
 
             output, hidden_state = model(x, hidden_state)
             loss += F.binary_cross_entropy_with_logits(output, y)
@@ -90,7 +93,7 @@ def test_rnn(model, X):
         x = X[i]
         output, hidden_state = model(x, hidden_state)
         output = torch.sigmoid(output)
-        print(f'{torch.argmax(x)} -> {torch.argmax(output)}')
+        print(f'{x} -> {torch.argmax(output)}')
 
 
 def test_lstm(model, X):
@@ -102,7 +105,7 @@ def test_lstm(model, X):
         x = X[i]
         output, hidden_state, cell = model(x, hidden_state, cell)
         output = torch.sigmoid(output)
-        print(f'{torch.argmax(x)} -> {torch.argmax(output)}')
+        print(f'{x} -> {torch.argmax(output)}')
 
 
 def test_gru(model, X):
@@ -113,25 +116,34 @@ def test_gru(model, X):
         x = X[i]
         output, hidden_state = model(x, hidden_state)
         output = torch.sigmoid(output)
-        print(f'{torch.argmax(x)} -> {torch.argmax(output)}')
+        print(f'{x} -> {torch.argmax(output)}')
 
 
-def train_and_test_rnn(d_in: int, d_hid: int, d_out: int, n_layers: int):
-    rnn_model = RNN(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+def train_and_test_rnn(d_in: int, d_hid: int, d_out: int, n_layers: int,
+                       dataset, vocab_size):
+    X, Y = dataset
+    rnn_model = RNN(d_in=d_in, d_hid=d_hid, d_out=d_out,
+                    n_layers=n_layers, vocab_size=vocab_size)
     rnn_optimizer = SGD(rnn_model.parameters(), lr=1e-1)
     train_rnn(rnn_model, X, Y, n_epochs, rnn_optimizer)
     test_rnn(rnn_model, X)
 
 
-def train_and_test_lstm(d_in: int, d_hid: int, d_out: int, n_layers: int):
-    lstm_model = LSTM(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+def train_and_test_lstm(d_in: int, d_hid: int, d_out: int, n_layers: int,
+                        dataset, vocab_size):
+    X, Y = dataset
+    lstm_model = LSTM(d_in=d_in, d_hid=d_hid, d_out=d_out,
+                      n_layers=n_layers, vocab_size=vocab_size)
     lstm_optimizer = SGD(lstm_model.parameters(), lr=1e-1)
     train_lstm(lstm_model, X, Y, n_epochs, lstm_optimizer)
     test_lstm(lstm_model, X)
 
 
-def train_and_test_gru(d_in: int, d_hid: int, d_out: int, n_layers: int):
-    gru_model = GRU(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+def train_and_test_gru(d_in: int, d_hid: int, d_out: int, n_layers: int,
+                       dataset, vocab_size):
+    X, Y = dataset
+    gru_model = GRU(d_in=d_in, d_hid=d_hid, d_out=d_out,
+                    n_layers=n_layers, vocab_size=vocab_size)
     gru_optimizer = SGD(gru_model.parameters(), lr=1e-1)
     train_gru(gru_model, X, Y, n_epochs, gru_optimizer)
     test_gru(gru_model, X)
@@ -145,11 +157,18 @@ if __name__ == '__main__':
     d_hid = 10
     d_out = 10
 
+    dataset = (X, Y)
+
+    vocab_size = 10
+
     print('Training and testing an RNN...')
-    train_and_test_rnn(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+    train_and_test_rnn(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+                       dataset=dataset, vocab_size=vocab_size)
 
     print('Training and testing a LSTM...')
-    train_and_test_lstm(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+    train_and_test_lstm(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+                        dataset=dataset, vocab_size=vocab_size)
 
     print('Training and testing a GRU...')
-    train_and_test_gru(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers)
+    train_and_test_gru(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+                       dataset=dataset, vocab_size=vocab_size)
