@@ -17,8 +17,9 @@ if __name__ == '__main__':
 
     device = 'cuda'
 
-    seq_len = 32
     batch_size = 20
+    n_epochs = 10
+    seq_len = 32
     lr = 1e-2
 
     train_dataset, test_dataset = create_wikitext2_dataset(seq_len=seq_len,
@@ -29,35 +30,21 @@ if __name__ == '__main__':
     vocab = train_dataset.vocab
     vocab_size = len(train_dataset.vocab)
 
-    n_epochs = 2_000
-    n_layers = 5
-    d_in = 256
-    d_hid = 256
-    d_out = vocab_size
-
     config = Config(
         d_in=256,
         d_hid=256,
         d_out=vocab_size,
-        n_layers=n_layers,
+        n_layers=5,
         vocab_size=vocab_size,
-        device='cuda'
+        device=device
     )
-
-    lr = 1e-2
 
     def optimizer_fn(lr: float):
         return SGD
 
-    rnn = RNN(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-              vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
-              device=device)
-    lstm = LSTM(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-                vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
-                device=device)
-    gru = GRU(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-              vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
-              device=device)
+    rnn = RNN(config, optimizer_fn=optimizer_fn(lr))
+    lstm = LSTM(config, optimizer_fn=optimizer_fn(lr))
+    gru = GRU(config, optimizer_fn=optimizer_fn(lr))
 
     models = [lstm]
 

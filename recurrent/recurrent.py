@@ -3,19 +3,20 @@ import torch.nn.functional as F
 
 from torch import Tensor
 
+from config import Config
+
 from abc import ABC, abstractmethod
 
 
 class Recurrent(ABC):
-    def __init__(self, d_in: int, d_hid: int, d_out: int, vocab_size: int,
-                 n_layers: int, optimizer_fn, device: str):
-        self.d_in = d_in
-        self.d_hid = d_hid
-        self.d_out = d_out
-        self.vocab_size = vocab_size
-        self.n_layers = n_layers
+    def __init__(self, config: Config, optimizer_fn):
+        self.d_in = config.d_in
+        self.d_hid = config.d_hid
+        self.d_out = config.d_out
+        self.vocab_size = config.vocab_size
+        self.n_layers = config.n_layers
 
-        self.device = device
+        self.device = config.device
         self.model = self.create_model()
         self.optimizer = optimizer_fn(self.model.parameters(), lr=1e-2)
 

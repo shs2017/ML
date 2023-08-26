@@ -1,16 +1,13 @@
 from torch import nn, Tensor
 
+from config import Config
 from layers import Gate, StateCombiner
 from recurrent import Recurrent, hidden_only_loss_fn
 
 
 class GRU(Recurrent):
-    def __init__(self, d_in: int, d_hid: int, d_out: int,
-                 n_layers: int, vocab_size: int, optimizer_fn,
-                 device: str):
-        super().__init__(d_in=d_in, d_hid=d_hid, d_out=d_out,
-                         vocab_size=vocab_size, n_layers=n_layers,
-                         optimizer_fn=optimizer_fn, device=device)
+    def __init__(self, config: Config, optimizer_fn):
+        super().__init__(config, optimizer_fn=optimizer_fn)
         self.name = 'GRU'
 
     def create_model(self):
