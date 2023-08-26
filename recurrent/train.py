@@ -1,174 +1,56 @@
 import torch
-import torch.nn.functional as F
 
 from torch.optim import SGD
+from torch.utils.data import DataLoader
 
-from dataset import X, Y
-from models import RNN, LSTM, GRU
-
-
-def create_initial_hidden_state(n_layers):
-    initial_state = torch.ones(d_in)
-    return [initial_state.clone() for _ in range(n_layers)]
-
-
-def train_rnn(model, X, Y, n_epochs, optimizer):
-    n_samples = X.size(0)
-
-    iterations = 0
-    for _ in range(n_epochs):
-        loss = 0.
-        hidden_state = create_initial_hidden_state(n_layers)
-        for i in range(n_samples):
-            x, y = X[i], Y[i]
-            y = y.unsqueeze(0)
-
-            output, hidden_state = model(x, hidden_state)
-            loss += F.binary_cross_entropy_with_logits(output, y)
-
-        model.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    iterations += 1
-
-    if iterations % 100 == 0:
-        print(loss)
-
-
-def train_lstm(model, X, Y, n_epochs, optimizer):
-    n_samples = X.size(0)
-
-    iterations = 0
-    for _ in range(n_epochs):
-        loss = 0.
-        cell = create_initial_hidden_state(n_layers)
-        hidden_state = create_initial_hidden_state(n_layers)
-        for i in range(n_samples):
-            x, y = X[i], Y[i]
-            y = y.unsqueeze(0)
-
-            output, hidden_state, cell = model(x, hidden_state, cell)
-            loss += F.binary_cross_entropy_with_logits(output, y)
-
-        model.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    iterations += 1
-
-    if iterations % 100 == 0:
-        print(loss)
-
-
-def train_gru(model, X, Y, n_epochs, optimizer):
-    n_samples = X.size(0)
-
-    iterations = 0
-    for _ in range(n_epochs):
-        loss = 0.
-        hidden_state = create_initial_hidden_state(n_layers)
-        for i in range(n_samples):
-            x, y = X[i], Y[i]
-            y = y.unsqueeze(0)
-
-            output, hidden_state = model(x, hidden_state)
-            loss += F.binary_cross_entropy_with_logits(output, y)
-
-        model.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    iterations += 1
-
-    if iterations % 100 == 0:
-        print(loss)
-
-
-def test_rnn(model, X):
-    n_samples = X.size(0)
-
-    hidden_state = create_initial_hidden_state(n_layers)
-    for i in range(n_samples):
-        x = X[i]
-        output, hidden_state = model(x, hidden_state)
-        output = torch.sigmoid(output)
-        print(f'{x} -> {torch.argmax(output)}')
-
-
-def test_lstm(model, X):
-    n_samples = X.size(0)
-
-    cell = create_initial_hidden_state(n_layers)
-    hidden_state = create_initial_hidden_state(n_layers)
-    for i in range(n_samples):
-        x = X[i]
-        output, hidden_state, cell = model(x, hidden_state, cell)
-        output = torch.sigmoid(output)
-        print(f'{x} -> {torch.argmax(output)}')
-
-
-def test_gru(model, X):
-    n_samples = X.size(0)
-
-    hidden_state = create_initial_hidden_state(n_layers)
-    for i in range(n_samples):
-        x = X[i]
-        output, hidden_state = model(x, hidden_state)
-        output = torch.sigmoid(output)
-        print(f'{x} -> {torch.argmax(output)}')
-
-
-def train_and_test_rnn(d_in: int, d_hid: int, d_out: int, n_layers: int,
-                       dataset, vocab_size):
-    X, Y = dataset
-    rnn_model = RNN(d_in=d_in, d_hid=d_hid, d_out=d_out,
-                    n_layers=n_layers, vocab_size=vocab_size)
-    rnn_optimizer = SGD(rnn_model.parameters(), lr=1e-1)
-    train_rnn(rnn_model, X, Y, n_epochs, rnn_optimizer)
-    test_rnn(rnn_model, X)
-
-
-def train_and_test_lstm(d_in: int, d_hid: int, d_out: int, n_layers: int,
-                        dataset, vocab_size):
-    X, Y = dataset
-    lstm_model = LSTM(d_in=d_in, d_hid=d_hid, d_out=d_out,
-                      n_layers=n_layers, vocab_size=vocab_size)
-    lstm_optimizer = SGD(lstm_model.parameters(), lr=1e-1)
-    train_lstm(lstm_model, X, Y, n_epochs, lstm_optimizer)
-    test_lstm(lstm_model, X)
-
-
-def train_and_test_gru(d_in: int, d_hid: int, d_out: int, n_layers: int,
-                       dataset, vocab_size):
-    X, Y = dataset
-    gru_model = GRU(d_in=d_in, d_hid=d_hid, d_out=d_out,
-                    n_layers=n_layers, vocab_size=vocab_size)
-    gru_optimizer = SGD(gru_model.parameters(), lr=1e-1)
-    train_gru(gru_model, X, Y, n_epochs, gru_optimizer)
-    test_gru(gru_model, X)
+from dataset import create_wikitext2_dataset
+from trainers import RNN, LSTM, GRU
 
 
 if __name__ == '__main__':
+    torch.manual_seed(seed=42)
+
+    device = 'cuda'
+
+    seq_len = 32
+    batch_size = 20
+    lr = 1e-2
+
+    train_dataset, test_dataset = create_wikitext2_dataset(seq_len=seq_len,
+                                                           device=device)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
+    test_dataloader = DataLoader(test_dataset, batch_size=1)
+
+    vocab = train_dataset.vocab
+    vocab_size = len(train_dataset.vocab)
+
     n_epochs = 2_000
-    n_layers = 3
+    n_layers = 5
+    d_in = 256
+    d_hid = 256
+    d_out = vocab_size
 
-    d_in = 10
-    d_hid = 10
-    d_out = 10
+    lr = 1e-2
 
-    dataset = (X, Y)
+    def optimizer_fn(lr: float):
+        return SGD
 
-    vocab_size = 10
+    rnn = RNN(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+              vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
+              device=device)
+    lstm = LSTM(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+                vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
+                device=device)
+    gru = GRU(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
+              vocab_size=vocab_size, optimizer_fn=optimizer_fn(lr),
+              device=device)
 
-    print('Training and testing an RNN...')
-    train_and_test_rnn(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-                       dataset=dataset, vocab_size=vocab_size)
+    models = [lstm]
 
-    print('Training and testing a LSTM...')
-    train_and_test_lstm(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-                        dataset=dataset, vocab_size=vocab_size)
+    for model in models:
+        print(f'*** Training {model.name} ***')
+        model.train(dataset=train_dataloader, n_epochs=n_epochs,
+                    show_output=True, vocab=vocab)
 
-    print('Training and testing a GRU...')
-    train_and_test_gru(d_in=d_in, d_hid=d_hid, d_out=d_out, n_layers=n_layers,
-                       dataset=dataset, vocab_size=vocab_size)
+        print(f'*** Testing {model.name} *** ')
+        model.test(dataset=test_dataloader, n_layers=n_layers, vocab=vocab)

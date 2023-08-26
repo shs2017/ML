@@ -26,7 +26,7 @@ class RNNCell(nn.Module):
         return output, new_hidden_state
 
 
-class RNN(nn.Module):
+class RNNModel(nn.Module):
     def __init__(self, d_in: int, d_hid: int, d_out: int,
                  n_layers: int, vocab_size: int):
         super().__init__()
@@ -113,7 +113,7 @@ class LSTMCell(nn.Module):
         return next_hidden_state, next_cell
 
 
-class LSTM(nn.Module):
+class LSTMModel(nn.Module):
     def __init__(self, d_in: int, d_hid: int, d_out: int,
                  n_layers: int, vocab_size: int):
         super().__init__()
@@ -178,7 +178,7 @@ class GRUCell(nn.Module):
         return next_hidden
 
 
-class GRU(nn.Module):
+class GRUModel(nn.Module):
     def __init__(self, d_in: int, d_hid: int, d_out: int,
                  n_layers: int, vocab_size: int):
         super().__init__()
