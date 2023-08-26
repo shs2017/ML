@@ -1,10 +1,15 @@
 import torch
 
+from config import Config
+
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
 from dataset import create_wikitext2_dataset
-from trainers import RNN, LSTM, GRU
+
+from rnn import RNN
+from lstm import LSTM
+from gru import GRU
 
 
 if __name__ == '__main__':
@@ -30,6 +35,15 @@ if __name__ == '__main__':
     d_hid = 256
     d_out = vocab_size
 
+    config = Config(
+        d_in=256,
+        d_hid=256,
+        d_out=vocab_size,
+        n_layers=n_layers,
+        vocab_size=vocab_size,
+        device='cuda'
+    )
+
     lr = 1e-2
 
     def optimizer_fn(lr: float):
@@ -49,8 +63,7 @@ if __name__ == '__main__':
 
     for model in models:
         print(f'*** Training {model.name} ***')
-        model.train(dataset=train_dataloader, n_epochs=n_epochs,
-                    show_output=True, vocab=vocab)
+        model.train(dataset=train_dataloader, n_epochs=n_epochs, vocab=vocab)
 
         print(f'*** Testing {model.name} *** ')
         model.test(dataset=test_dataloader, n_layers=n_layers, vocab=vocab)
