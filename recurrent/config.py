@@ -9,3 +9,4 @@ class Config:
     n_layers: int
     vocab_size: int
     device: str
+    log_interval: int

@@ -25,7 +25,7 @@ class LSTM(Recurrent):
         self.train_helper(dataset, n_epochs, vocab)
 
     def test(self, dataset, vocab):
-        self.test_helper(self.model, dataset, hidden_only_loss_fn, vocab)
+        self.test_helper(dataset, vocab)
 
 
 class LSTMModel(nn.Module):

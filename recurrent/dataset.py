@@ -47,7 +47,8 @@ class TextDataset(Dataset):
         for i in range(0, len(flattened_text), self.stored_seq_len):
             sequenced_text.append(flattened_text[i: i + self.stored_seq_len])
 
-        return sequenced_text[:-1]  # drop last to guarantee a rectangular array
+        # drop last to guarantee a rectangular array
+        return sequenced_text[:-1]
 
     def tokenize(self, dataset):
         tokenizer = torchtext.data.utils.get_tokenizer(self.tokenizer_type)
@@ -58,12 +59,12 @@ class TextDataset(Dataset):
 
 
 def create_wikitext2_dataset(seq_len: int, device: str):
-    train_text, test_text = WikiText2(root='.', split=('train', 'valid'))
+    train_text, valid_text = WikiText2(root='.', split=('train', 'valid'))
 
     train_dataset = TextDataset(train_text, seq_len=seq_len, device=device)
-    test_dataset = TextDataset(test_text, seq_len=seq_len, device=device)
+    valid_dataset = TextDataset(valid_text, seq_len=seq_len, device=device)
 
-    return (train_dataset, test_dataset)
+    return (train_dataset, valid_dataset)
 
 # for x in TextDataset(train, seq_len=3):
 #     print(x)
