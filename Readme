@@ -4,12 +4,13 @@ Implementation of several deep learning architectures
 [x] CNN
 [x] ResNet
 [X] Transformer
-[X] Tabular Model-free RL(SARSA & Q-Learning)
+[X] Tabular Model-free RL (SARSA & Q-Learning)
 [X] Deep RL (DDQN)
+[X] Recurrent Networks (RNN, LSTM, GRU)
 [] Forward-Forward Algorithm
 [] UNet
 [] Latent Diffusion
-[] NeRF (wip)
+[] NeRF
 [] Custom long-term memory, out-of-context learning architecture (wip)
 
 TODO:
