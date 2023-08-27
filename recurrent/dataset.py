@@ -65,10 +65,3 @@ def create_wikitext2_dataset(seq_len: int, device: str):
     valid_dataset = TextDataset(valid_text, seq_len=seq_len, device=device)
 
     return (train_dataset, valid_dataset)
-
-# for x in TextDataset(train, seq_len=3):
-#     print(x)
-#     exit()
-
-# X = Tensor([[0], [1], [2], [3], [2], [1], [0]]).to(torch.long)
-# Y = F.one_hot(torch.arange(6, -1, -1), num_classes=10).to(torch.float)
