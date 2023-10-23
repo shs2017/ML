@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 from torch import optim
 
-from config import Config
-from dataset import get_train_dataset
+from config import Config, get_config
+from dataset import SegmentationDataset
 from model import UNet
 
 class MainModel(pl.LightningModule):
@@ -18,9 +18,9 @@ class MainModel(pl.LightningModule):
         self.model = UNet(config)
 
     def training_step(self, batch, _):
-        img, true_segmentation = batch
-        predicted_segmentation = self.model(batch)
-        loss = F.cross_entropy(predicted_segmentation, true, segmentation)
+        image, true_segmentation = batch
+        predicted_segmentation = self.model(image)
+        loss = F.cross_entropy(predicted_segmentation, true_segmentation)
         self.loss('train_loss', loss)
         return loss
 
@@ -32,8 +32,9 @@ class MainModel(pl.LightningModule):
         )
 
 config = get_config()
+
 main_model = MainModel(config)
-train_dataset = get_train_dataset()
+train_dataset = SegmentationDataset(config).get_train_dataset()
 
 trainer = pl.Trainer(max_epochs=config.max_epochs, log_every_n_steps=config.log_every_n_steps)
 trainer.fit(model=main_model, train_dataloaders=train_dataset)

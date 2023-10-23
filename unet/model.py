@@ -132,7 +132,12 @@ class ConvGroup(nn.Module):
 
 
 if __name__ == '__main__':
+    from config import get_config
+
+    config = get_config()
+
     r = torch.rand(10, 1, 572, 572)
-    conv = UNet(in_channels=1, out_channels=2, kernel_size=3, downscale_kernel_size=2, upscale_kernel_size=2)
+    conv = UNet(config)
     out = conv(r)
+
     print(f'{out.shape=}')
