@@ -3,45 +3,45 @@ import torch.nn.functional as F
 
 from torch import nn, Tensor
 
+from config import Config
 
 class UNet(nn.Module):
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int,
-                 downscale_kernel_size: int, upscale_kernel_size: int) -> None:
+    def __init__(self, config: Config):
         super().__init__()
 
-        channels1 = in_channels
+        channels1 = config.in_channels
         channels2 = 64
         channels3 = 128
         channels4 = 256
         channels5 = 512
         channels6 = 1024
 
-        self.down1 = ConvDown(channels1, channels2, kernel_size, downscale_kernel_size)
-        self.down2 = ConvDown(channels2, channels3, kernel_size, downscale_kernel_size)
-        self.down3 = ConvDown(channels3, channels4, kernel_size, downscale_kernel_size)
-        self.down4 = ConvDown(channels4, channels5, kernel_size, downscale_kernel_size)
+        self.down1 = ConvDown(channels1, channels2, config.kernel_size, config.downscale_kernel_size)
+        self.down2 = ConvDown(channels2, channels3, config.kernel_size, config.downscale_kernel_size)
+        self.down3 = ConvDown(channels3, channels4, config.kernel_size, config.downscale_kernel_size)
+        self.down4 = ConvDown(channels4, channels5, config.kernel_size, config.downscale_kernel_size)
 
         self.conv1 = nn.Conv2d(
             in_channels=channels5,
             out_channels=channels6,
-            kernel_size=kernel_size
+            kernel_size=config.kernel_size
         )
 
         self.conv2 = nn.Conv2d(
             in_channels=channels6,
             out_channels=channels6,
-            kernel_size=kernel_size
+            kernel_size=config.kernel_size
         )
 
-        self.up1 = ConvUp(channels6, channels5, kernel_size, upscale_kernel_size)
-        self.up2 = ConvUp(channels5, channels4, kernel_size, upscale_kernel_size)
-        self.up3 = ConvUp(channels4, channels3, kernel_size, upscale_kernel_size)
-        self.up4 = ConvUp(channels3, channels2, kernel_size, upscale_kernel_size)
+        self.up1 = ConvUp(channels6, channels5, config.kernel_size, config.upscale_kernel_size)
+        self.up2 = ConvUp(channels5, channels4, config.kernel_size, config.upscale_kernel_size)
+        self.up3 = ConvUp(channels4, channels3, config.kernel_size, config.upscale_kernel_size)
+        self.up4 = ConvUp(channels3, channels2, config.kernel_size, config.upscale_kernel_size)
 
         self.out_conv = nn.Conv2d(
             in_channels=channels2,
-            out_channels=out_channels,
+            out_channels=config.out_channels,
             kernel_size=1
         )
 
@@ -133,10 +133,6 @@ class ConvGroup(nn.Module):
 
 if __name__ == '__main__':
     r = torch.rand(10, 1, 572, 572)
-
-    # conv = Conv(1, 64, 3)
-    # conv =  ConvDown(in_channels=1, out_channels=64, kernel_size=3, downscale_kernel_size=2)
-
     conv = UNet(in_channels=1, out_channels=2, kernel_size=3, downscale_kernel_size=2, upscale_kernel_size=2)
     out = conv(r)
     print(f'{out.shape=}')

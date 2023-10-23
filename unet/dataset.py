@@ -16,4 +16,13 @@ root_directory = os.path.dirname(current_directory)
 dataset_directory = os.path.join(root_directory, DATASETS_FOLDER_NAME)
 
 
-train_dataset = TorchDataset(root=dataset_directory, image_set='train', download=True)
+def get_train_dataset():
+    return TorchDataset(root=dataset_directory, image_set='train', download=True)
+
+def get_val_dataset():
+    return TorchDataset(root=dataset_directory, image_set='val', download=True)
+
+def get_test_dataset():
+    return TorchDataset(root=dataset_directory, image_set='test', download=True)
+
+# TODO: Need a pipeline here
