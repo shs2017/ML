@@ -1,7 +1,13 @@
+import torch
+import torch.nn.functional as F
+
+import numpy as np
+
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
 from torchvision.datasets import VOCSegmentation as TorchDataset
-from torchvision.transforms import Grayscale, RandomCrop, Resize, ToTensor
+from torchvision.transforms import ConvertImageDtype, Grayscale, RandomCrop, Resize, ToTensor
 
 import os
 
@@ -28,6 +34,7 @@ class SegmentationDataset:
             dataset,
             batch_size=self.batch_size,
             shuffle=shuffle,
+            # num_workers=1,
         )
 
         return dataloader
@@ -44,21 +51,22 @@ class SegmentationDataset:
 class Transforms():
     def __init__(self):
         self.common_transforms = [
-            Grayscale(),
-            ToTensor(),
             RandomCrop(size=(100, 100)), # TODO: Don't hard-code this
         ]
 
         self.image_transforms = [
-            Resize(size=(572, 572)) # TODO: Don't hard-code this!!!
+            Grayscale(),
+            ToTensor(),
+            Resize(size=(572, 572), antialias=True) # TODO: Don't hard-code this!!!
         ]
 
         self.segmentation_transforms = [
-            Resize(size=(388, 388)) # TODO: Don't hard-code this!!!
+            ToTensorSegmentation(),
+            Resize(size=(388, 388), antialias=True) # TODO: Don't hard-code this!!!
         ]
 
 
-    def __call__(self, image, segmentation):
+    def __call__(self, image, segmentation) -> Tensor:
         for transform in self.common_transforms:
             image = transform(image)
             segmentation = transform(segmentation)
@@ -72,6 +80,17 @@ class Transforms():
 
         return image, segmentation
 
+
+class ToTensorSegmentation():
+    def __call__(self, x: Tensor) -> Tensor:
+        x = torch.as_tensor(np.array(x), dtype=torch.int64)
+        x = x.unsqueeze(0)
+
+        # Remove border class
+        x[x == 255] = 0
+
+        return x
+        
 
 # Helpers
 def create_directory_if_does_not_exist(directory: str) -> None:

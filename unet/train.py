@@ -18,10 +18,13 @@ class MainModel(pl.LightningModule):
         self.model = UNet(config)
 
     def training_step(self, batch, _):
+        breakpoint()
         image, true_segmentation = batch
+        true_segmentation = true_segmentation.squeeze(1)
+
         predicted_segmentation = self.model(image)
         loss = F.cross_entropy(predicted_segmentation, true_segmentation)
-        self.loss('train_loss', loss)
+        self.log('train_loss', loss)
         return loss
 
     def configure_optimizers(self):

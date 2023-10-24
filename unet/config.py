@@ -24,11 +24,11 @@ def get_config():
         momentum=0.95,
         max_epochs=25,
         log_every_n_steps=1,
-        batch_size=20,
+        batch_size=2,
         dataset_folder_name='datasets',
 
         in_channels=1,
-        out_channels=2,
+        out_channels=21,
         kernel_size=3,
         downscale_kernel_size=2,
         upscale_kernel_size=2
