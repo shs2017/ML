@@ -19,14 +19,14 @@ class SegmentationDataset:
         self.batch_size = config.batch_size
         self.dataset_path = dataset_directory_path(config.dataset_folder_name)
 
-    def get_train_dataset(self) -> Dataset:
+    def retrieve_train_data(self) -> Dataset:
         return self._create_dataloader(image_set='train', shuffle=True)
 
-    def get_val_dataset(self) -> Dataset:
-        return self._create_dataloader(image_set='val', shuffle=False)
+    def retrieve_val_data(self) -> Dataset:
+        return self._create_dataloader(image_set='trainval', shuffle=False)
 
-    def get_test_dataset(self) -> Dataset:
-        return self._create_dataloader(image_set='test', shuffle=False)
+    def retrieve_test_data(self) -> Dataset:
+        return self._create_dataloader(image_set='val', shuffle=False)
 
     def _create_dataloader(self, image_set: str, shuffle: bool) -> DataLoader:
         dataset = self._create_dataset(image_set)

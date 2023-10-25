@@ -23,7 +23,7 @@ def get_config():
         lr=1e-3,
         momentum=0.95,
         max_epochs=25,
-        log_every_n_steps=1,
+        log_every_n_steps=1_000,
         batch_size=2,
         dataset_folder_name='datasets',
 
