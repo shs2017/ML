@@ -6,10 +6,10 @@ Implementation of several deep learning architectures
 [X] Transformer
 [X] Tabular Model-free RL(SARSA & Q-Learning)
 [X] Deep RL (DDQN)
-[] Forward-Forward Algorithm
-[] UNet
-[] Latent Diffusion
-[] NeRF (wip)
+[X] UNet
+[] Denoising Diffusion Probabilistic Model (wip)
+[] NeRF
+[] Mamba
 [] Custom long-term memory, out-of-context learning architecture (wip)
 
 TODO:
