@@ -5,14 +5,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim, Tensor
 
-from torchvision.utils import save_image
-
 from config import Config
 
 from math import exp
 
 class MainModel(pl.LightningModule):
-    def __init__(self, config: Config, class_weights: torch.Tensor = None):
+    def __init__(self, config: Config):
         super().__init__()
         self.automatic_optimization = False # allows us to control how gan is trained
 
@@ -24,53 +22,22 @@ class MainModel(pl.LightningModule):
         self.generator = Generator(config)
         self.discriminator = Discriminator(config)
 
-    def random_hidden_vector(self, batch_size: int) -> Tensor:
-        return torch.randn(size=(batch_size, self.hidden_channels, 1, 1)).cuda()
-
-    def compute_discriminator_loss(self, batch):
-        real_image, class_label = batch
-
-        batch_size = real_image.size(0)
-
-        real_classification = self.discriminator(real_image)
-
-        generated_image = self.generator(self.random_hidden_vector(batch_size))
-        generated_classification = self.discriminator(generated_image)
-
-        loss = real_classification.mean() - generated_classification.mean()
-        return loss
-
-    def compute_generator_loss(self, batch):
-        image, class_label = batch
-
-        batch_size = image.size(0)
-
-        generated_image = self.generator(self.random_hidden_vector(batch_size))
-        generated_classification = self.discriminator(generated_image)
-
-        loss = generated_classification.mean()
-        return loss
-
-    def clip_discriminator_parameters(self):
-        for parameter in self.discriminator.parameters():
-            parameter.data.clamp_(-self.weight_clip_value, self.weight_clip_value)
-
     def training_step(self, batch, _):
-        generator_optimizer, discriminator_optimizer = self.optimizers()
+        discriminator_optimizer, generator_optimizer = self.optimizers()
 
         # Train Discriminator
         discriminator_optimizer.zero_grad()
         generator_optimizer.zero_grad()
 
-        discriminator_loss = self.compute_discriminator_loss(batch)
+        discriminator_loss = self._compute_discriminator_loss(batch)
         self.manual_backward(discriminator_loss)
         discriminator_optimizer.step()
-        self.clip_discriminator_parameters()
+        self._clip_discriminator_parameters()
 
         # Train Generator
         discriminator_optimizer.zero_grad()
         generator_optimizer.zero_grad()
-        generator_loss = self.compute_generator_loss(batch)
+        generator_loss = self._compute_generator_loss(batch)
         self.manual_backward(generator_loss)
         generator_optimizer.step()
 
@@ -78,22 +45,67 @@ class MainModel(pl.LightningModule):
         self.log('train_generated_loss', generator_loss, prog_bar=True)
 
 
-    def configure_optimizers(self):
-        generator_optimizer = optim.Adam(self.generator.parameters(), lr=self.lr, betas=self.betas)
-        discriminator_optimizer = optim.Adam(self.discriminator.parameters(), lr=self.lr, betas=self.betas)
-        return generator_optimizer, discriminator_optimizer
+    def _compute_discriminator_loss(self, batch):
+        real_image, _ = batch
+        batch_size = real_image.size(0)
 
-    def generate_image(self):
-        generated_image = self.generator(self.random_hidden_vector(64))
-        save_image(generated_image, 'image.jpg')
+        real_classification = self.discriminator(real_image)
+
+        generated_image = self.generate_image(batch_size)
+        generated_classification = self.discriminator(generated_image)
+
+        loss = real_classification.mean() - generated_classification.mean()
+        return loss
+
+    def _compute_generator_loss(self, batch):
+        image, _ = batch
+        batch_size = image.size(0)
+
+        generated_image = self.generate_image(batch_size)
+        generated_classification = self.discriminator(generated_image)
+
+        loss = generated_classification.mean()
+        return loss
+
+    def _random_hidden_vector(self, batch_size: int) -> Tensor:
+        return torch.randn(size=(batch_size, self.hidden_channels, 1, 1)).cuda()
+
+    def _clip_discriminator_parameters(self):
+        for parameter in self.discriminator.parameters():
+            parameter.data.clamp_(-self.weight_clip_value, self.weight_clip_value)
+
+    def generate_image(self, n_samples: int):
+        return self.generator(self._random_hidden_vector(n_samples))
+
+    def configure_optimizers(self):
+        discriminator_optimizer = optim.Adam(self.discriminator.parameters(),
+                                             lr=self.lr,
+                                             betas=self.betas)
+
+        generator_optimizer = optim.Adam(self.generator.parameters(),
+                                         lr=self.lr,
+                                         betas=self.betas)
+
+        return discriminator_optimizer, generator_optimizer
 
 
 class ConvTranposeGroup(nn.Module):
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, stride: int, padding: int):
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int,
+                 stride: int,
+                 padding: int):
         super().__init__()
 
-        self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        self.conv = nn.ConvTranspose2d(in_channels,
+                                       out_channels,
+                                       kernel_size,
+                                       stride,
+                                       padding,
+                                       bias=False)
+
         self.batch_norm = nn.BatchNorm2d(out_channels)
         self.sigma = nn.LeakyReLU()
 
@@ -106,10 +118,21 @@ class ConvTranposeGroup(nn.Module):
 
 class ConvGroup(nn.Module):
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, stride: int, padding: int):
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int,
+                 stride: int,
+                 padding: int):
         super().__init__()
 
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        self.conv = nn.Conv2d(in_channels,
+                              out_channels,
+                              kernel_size,
+                              stride,
+                              padding,
+                              bias=False)
+
         self.batch_norm = nn.BatchNorm2d(out_channels)
         self.sigma = nn.LeakyReLU()
 
@@ -129,12 +152,22 @@ class Generator(nn.Module):
         base_channels = config.base_channels
         out_channels = config.image_input_channels
 
+
         self.f = nn.Sequential(*[
-            ConvTranposeGroup(in_channels, 8 * base_channels, config.kernel_size, 1, 0),
-            ConvTranposeGroup(8 * base_channels, 4 * base_channels, config.kernel_size, config.upscale_kernel_size, 1),
-            ConvTranposeGroup(4 * base_channels, 2 * base_channels, config.kernel_size, config.upscale_kernel_size, 1),
-            ConvTranposeGroup(2 * base_channels, base_channels, config.kernel_size, config.upscale_kernel_size, 1),
-            nn.ConvTranspose2d(base_channels, out_channels, config.kernel_size, config.upscale_kernel_size, 1),
+            ConvTranposeGroup(in_channels, 8 * base_channels,
+                              config.kernel_size, 1, 0),
+
+            ConvTranposeGroup(8 * base_channels, 4 * base_channels,
+                              config.kernel_size, config.upscale_kernel_size, 1),
+
+            ConvTranposeGroup(4 * base_channels, 2 * base_channels,
+                              config.kernel_size, config.upscale_kernel_size, 1),
+
+            ConvTranposeGroup(2 * base_channels, base_channels,
+                              config.kernel_size, config.upscale_kernel_size, 1),
+
+            nn.ConvTranspose2d(base_channels, out_channels,
+                               config.kernel_size, config.upscale_kernel_size, 1),
             nn.Tanh()
         ])
 
@@ -152,16 +185,26 @@ class Discriminator(nn.Module):
         out_channels = config.discriminator_output_channels
 
         self.f = nn.Sequential(*[
-            ConvGroup(in_channels, base_channels, config.kernel_size, config.downscale_kernel_size, 1),
-            ConvGroup(base_channels, 2 * base_channels, config.kernel_size, config.downscale_kernel_size, 1),
-            ConvGroup(2 * base_channels, 4 * base_channels, config.kernel_size, config.downscale_kernel_size, 1),
-            ConvGroup(4 * base_channels, 8 * base_channels, config.kernel_size, config.downscale_kernel_size, 1),
-            nn.Conv2d(8 * base_channels, out_channels, config.kernel_size, 1, 0, bias=False)
+            ConvGroup(in_channels,
+                      base_channels,
+                      config.kernel_size,
+                      config.downscale_kernel_size,
+                      1),
+            ConvGroup(base_channels, 2 * base_channels,
+                      config.kernel_size, config.downscale_kernel_size, 1),
+
+            ConvGroup(2 * base_channels, 4 * base_channels,
+                      config.kernel_size, config.downscale_kernel_size, 1),
+
+            ConvGroup(4 * base_channels, 8 * base_channels,
+                      config.kernel_size, config.downscale_kernel_size, 1),
+
+            nn.Conv2d(8 * base_channels, out_channels,
+                      config.kernel_size, config.downscale_kernel_size, 0, bias=False)
         ])
 
     def forward(self, x: Tensor) -> Tensor:
         return self.f(x)
-
 
 if __name__ == '__main__':
     # Sanity check if running this script directly
@@ -174,7 +217,7 @@ if __name__ == '__main__':
     generator_out = generator(r)
     print(generator_out.shape)
 
-    r = torch.rand(256, 1, 32, 32)
+    r = torch.rand(256, 1, 64, 64)
     discriminator = Discriminator(config)
     discriminator_out = discriminator(r)
     print(discriminator_out.shape)

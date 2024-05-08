@@ -1,5 +1,10 @@
 from dataclasses import dataclass
 
+
+GRAYSCALE_DIM = 1
+RGB_DIM = 3
+
+
 @dataclass
 class Config():
     # Training Parameters
@@ -23,22 +28,20 @@ class Config():
 
     weight_clip_value: float
 
-GRAYSCALE_DIM = 1
-RGB_DIM = 1
 
 def get_config():
     return Config(
         lr=2e-4,
         betas=(0.5, 0.999),
 
-        max_epochs=5,
-        log_every_n_steps=1_000,
+        max_epochs=25,
+        log_every_n_steps=250,
         batch_size=256,
         dataset_folder_name='datasets',
 
         base_channels=64,
         hidden_channels=128,
-        image_input_channels=GRAYSCALE_DIM,
+        image_input_channels=RGB_DIM,
         discriminator_output_channels=1,
 
         kernel_size=4,
