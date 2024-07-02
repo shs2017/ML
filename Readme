@@ -4,10 +4,11 @@ Implementation of several deep learning architectures
 [x] CNN
 [x] ResNet
 [X] Transformer
-[X] Tabular Model-free RL(SARSA & Q-Learning)
+[X] Tabular Model-free RL (SARSA & Q-Learning)
 [X] Deep RL (DDQN)
 [X] UNet
 [X] GAN (W-GAN)
+[X] Gaussian Processes
 [] Denoising Diffusion Probabilistic Model (wip)
 [] NeRF
 [] Mamba
