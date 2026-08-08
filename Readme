@@ -12,7 +12,7 @@ Implementation of several deep learning architectures
 [] Denoising Diffusion Probabilistic Model (wip)
 [] NeRF
 [] Mamba
-[] Custom long-term memory, out-of-context learning architecture (wip)
+[] Continual Learning Machine: sha256sum:390be4bf25a361f7cc76da5643e43e717738670d4f902caf5798b2bdad2f0770
 
 TODO:
 * Add training results
